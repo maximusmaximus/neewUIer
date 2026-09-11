@@ -1,0 +1,22 @@
+[tool.pytest.ini_options]
+testpaths = ["hub/tests"]
+addopts = "-q --tb=short"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 140
+src = ["hub"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "E741"]
+
+[tool.coverage.run]
+branch = true
+include = ["hub/cinenode-hub.py", "public/cinenode-hub.py"]
+omit = ["hub/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 60

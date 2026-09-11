@@ -38,5 +38,25 @@
     "name": "rgb_color green",
     "in": { "state": "ON", "rgb_color": [0, 255, 0] },
     "out": { "power": true, "mode": "hsi" }
+  },
+  {
+    "name": "hs_color array",
+    "in": { "state": "ON", "hs_color": [88, 24] },
+    "out": { "power": true, "mode": "hsi", "hue": 88, "saturation": 24 }
+  },
+  {
+    "name": "native kelvin does not steal hsi",
+    "in": { "mode": "hsi", "hue": 40, "kelvin": 5600 },
+    "out": { "mode": "hsi", "hue": 40, "kelvin": 5600 }
+  },
+  {
+    "name": "effect scene 3",
+    "in": { "effect": "scene 3" },
+    "out": { "mode": "scene", "sceneId": 3, "power": true }
+  },
+  {
+    "name": "empty body",
+    "in": {},
+    "out": {}
   }
 ]

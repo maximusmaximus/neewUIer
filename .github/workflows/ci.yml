@@ -15,28 +15,39 @@ permissions:
 
 jobs:
   python:
-    name: python
+    name: python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install test deps
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip -r requirements-dev.txt
+      - name: Compile
+        run: python -m compileall -q hub/cinenode-hub.py
+      - name: Ruff
+        run: python -m ruff check hub
       - name: Hub self-test
         run: python hub/cinenode-hub.py --self-test
       - name: Pytest
         env:
           HUB_PATH: hub/cinenode-hub.py
-        run: python -m pytest hub/tests -q --tb=short
+          COVERAGE_FILE: .coverage
+        run: python -m pytest hub/tests --tb=short --cov --cov-report=term-missing
 
   node:
     name: node
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
@@ -49,6 +60,7 @@ jobs:
     needs: [python, node]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Require python and node
         run: |

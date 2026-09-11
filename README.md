@@ -22,10 +22,16 @@ Or `make check`. Enable the local pre-push hook once:
 git config core.hooksPath .githooks
 ```
 
-CI (GitHub Actions) runs the same Python self-test, pytest, Node unit tests, and `tsc` on every pull request. See [CONTRIBUTING.md](CONTRIBUTING.md).
+CI (GitHub Actions) runs on every pull request, on Python 3.10 and 3.12 plus Node 22:
+
+- compile + ruff
+- hub `--self-test`
+- pytest with coverage floor
+- TypeScript unit tests + `tsc`
+
+`main` requires a pull request and a green aggregate `ci` job. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Why
-
 
 The official Neewer app holds the Bluetooth session and blocks other clients. These fixtures speak a documented BLE protocol (`0x78` frames on service `69400001-…`). This hub claims that session so you can automate them.
 

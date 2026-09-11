@@ -3,9 +3,13 @@ import { test } from "node:test";
 import {
   checksum,
   cctFrame,
+  cctHybridFrame,
   hsiFrame,
+  parseHex,
   powerFrame,
+  powerStatusQuery,
   sceneFrame,
+  statusQuery,
   toHex,
 } from "./protocol.ts";
 
@@ -34,4 +38,21 @@ test("cct 100% 5600K", () => {
 
 test("scene cop car", () => {
   assert.equal(toHex(sceneFrame(100, 1)), "78 88 02 64 01 67");
+});
+
+test("hybrid CCT encodes green-magenta as offset 50", () => {
+  const bytes = [...cctHybridFrame(100, 5600, 0)];
+  assert.equal(bytes[2], 0x03);
+  assert.equal(bytes[5], 50);
+  assert.equal(bytes[bytes.length - 1], checksum(bytes.slice(0, -1)));
+});
+
+test("status queries checksum", () => {
+  assert.equal(toHex(statusQuery()), "78 84 00 fc");
+  assert.equal(toHex(powerStatusQuery()), "78 85 00 fd");
+});
+
+test("hex round trip", () => {
+  const original = powerFrame(true);
+  assert.deepEqual([...parseHex(toHex(original))], [...original]);
 });
