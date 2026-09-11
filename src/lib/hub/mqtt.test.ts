@@ -79,11 +79,33 @@ test("rgb_color converts to hs", () => {
   assert.ok((patch.hue ?? 0) > 100 && (patch.hue ?? 0) < 140);
 });
 
+test("native kelvin does not steal an explicit hsi mode", () => {
+  const patch = parseHaCommand({ mode: "hsi", hue: 40, kelvin: 5600 });
+  assert.equal(patch.mode, "hsi");
+  assert.equal(patch.hue, 40);
+  assert.equal(patch.kelvin, 5600);
+});
+
+test("rejects non-object command bodies", () => {
+  assert.deepEqual(parseHaCommand(null), {});
+  assert.deepEqual(parseHaCommand("ON"), {});
+});
+
 test("state payload uses brightness_scale 100", () => {
   const payload = haStatePayload(DEMO_LIGHTS[0]);
   assert.equal(payload.state, "ON");
   assert.equal(payload.brightness, 72);
   assert.equal(payload.color_mode, "color_temp");
+});
+
+test("state payload for hsi and disconnected lights", () => {
+  const fill = DEMO_LIGHTS.find((light) => light.id === "fill");
+  assert.ok(fill);
+  const hsi = haStatePayload(fill);
+  assert.equal(hsi.color_mode, "hs");
+  const accent = DEMO_LIGHTS.find((light) => light.id === "accent");
+  assert.ok(accent);
+  assert.equal(haStatePayload(accent).state, "OFF");
 });
 
 test("broker url parser reads user and tls port", () => {
@@ -102,6 +124,12 @@ test("windows launch command quotes mqtt password", () => {
   );
   assert.match(cmd, /Start-CineNode\.bat/);
   assert.match(cmd, /--mqtt-password "a b"/);
+});
+
+test("unix launch command includes broker", () => {
+  const cmd = formatLaunchCommand(DEFAULT_SETTINGS, "unix");
+  assert.match(cmd, /^\.\/start-cinenode\.sh/);
+  assert.match(cmd, /--mqtt mqtt:\/\/homeassistant\.local:1883/);
 });
 
 test("python and typescript share HA command fixtures", () => {
