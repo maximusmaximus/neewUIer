@@ -37,3 +37,24 @@ def hub(hub_path: Path):
     sys.modules["cinenode_hub"] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def isolated_hub(hub):
+    """Restore the process-wide Hub singleton after a test mutates it."""
+    original = [dict(item) for item in hub.HUB.lights]
+    orig_sim = hub.HUB.simulator
+    orig_rev = hub.HUB.revision
+    orig_pending = dict(hub.HUB.pending)
+    orig_mqtt = hub.HUB.mqtt_status
+    orig_on_change = hub.HUB.on_change
+    try:
+        yield hub.HUB
+    finally:
+        hub.HUB.lights = original
+        hub.HUB.simulator = orig_sim
+        hub.HUB.revision = orig_rev
+        hub.HUB.pending = orig_pending
+        hub.HUB.mqtt_status = orig_mqtt
+        hub.HUB.on_change = orig_on_change
+        hub.HUB.clients = {}
