@@ -1,12 +1,31 @@
 # neewUIer
 
+[![CI](https://github.com/maximusmaximus/neewUIer/actions/workflows/ci.yml/badge.svg)](https://github.com/maximusmaximus/neewUIer/actions/workflows/ci.yml)
+
 Local control for **Neewer** Bluetooth lights. No vendor app. A small hub on your LAN talks GATT, and any browser or Home Assistant on the same network can set power, CCT, HSI color, scenes, looks, and patterns.
 
 Studio: CineNode in the browser. Radio: the Python hub in this repo.
 
 **GitHub:** [github.com/maximusmaximus/neewUIer](https://github.com/maximusmaximus/neewUIer)
 
+## Checks (required)
+
+Nothing is merged to `main` unless this gate is green. Run it before every push:
+
+```bash
+./scripts/check.sh
+```
+
+Or `make check`. Enable the local pre-push hook once:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+CI (GitHub Actions) runs the same Python self-test, pytest, Node unit tests, and `tsc` on every pull request. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Why
+
 
 The official Neewer app holds the Bluetooth session and blocks other clients. These fixtures speak a documented BLE protocol (`0x78` frames on service `69400001-…`). This hub claims that session so you can automate them.
 

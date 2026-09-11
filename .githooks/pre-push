@@ -1,0 +1,3 @@
+#!/bin/sh
+# Block `git push` unless the same gate CI runs is green.
+exec "$(dirname "$0")/../scripts/check.sh"
