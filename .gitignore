@@ -3,3 +3,8 @@ __pycache__/
 cinenode.json
 .DS_Store
 node_modules/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/

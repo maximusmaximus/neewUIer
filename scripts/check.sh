@@ -14,12 +14,19 @@ else
   exit 1
 fi
 
+python3 -m pip install -q -r requirements-dev.txt
+
+echo "==> compile ($HUB)"
+python3 -m compileall -q "$HUB"
+
+echo "==> ruff"
+python3 -m ruff check "$HUB" hub/tests
+
 echo "==> python self-test ($HUB)"
 python3 "$HUB" --self-test
 
 echo "==> pytest"
-python3 -m pip install -q pytest
-HUB_PATH="$HUB" python3 -m pytest hub/tests -q --tb=short
+HUB_PATH="$HUB" python3 -m pytest hub/tests -q --tb=short --cov --cov-report=term-missing
 
 if [[ -f package.json ]]; then
   echo "==> node tests"
