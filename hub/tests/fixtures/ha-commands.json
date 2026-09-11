@@ -1,0 +1,42 @@
+[
+  {
+    "name": "HA JSON hs color wheel",
+    "in": { "state": "ON", "brightness": 80, "color_mode": "hs", "color": { "h": 210, "s": 70 } },
+    "out": { "power": true, "mode": "hsi", "hue": 210, "saturation": 70, "brightness": 80 }
+  },
+  {
+    "name": "HA color_temp mireds 153",
+    "in": { "state": "ON", "color_temp": 153 },
+    "out": { "power": true, "mode": "cct", "kelvin": 6536 }
+  },
+  {
+    "name": "HA color_temp_kelvin",
+    "in": { "state": "ON", "color_temp_kelvin": 5600, "brightness": 40 },
+    "out": { "power": true, "mode": "cct", "kelvin": 5600, "brightness": 40 }
+  },
+  {
+    "name": "brightness 255 scale",
+    "in": { "brightness": 204 },
+    "out": { "power": true, "brightness": 80 }
+  },
+  {
+    "name": "effect Party",
+    "in": { "state": "ON", "effect": "Candlelight" },
+    "out": { "power": true, "mode": "scene", "sceneId": 6 }
+  },
+  {
+    "name": "native CineNode patch",
+    "in": { "power": true, "mode": "hsi", "hue": 32, "saturation": 12, "brightness": 50 },
+    "out": { "power": true, "mode": "hsi", "hue": 32, "saturation": 12, "brightness": 50 }
+  },
+  {
+    "name": "OFF does not force mode",
+    "in": { "state": "OFF" },
+    "out": { "power": false }
+  },
+  {
+    "name": "rgb_color green",
+    "in": { "state": "ON", "rgb_color": [0, 255, 0] },
+    "out": { "power": true, "mode": "hsi" }
+  }
+]
