@@ -78,7 +78,7 @@ Operating rules
 """
 
 MODEL_NAME = re.compile(
-    r"(NEEWER|NEEWEAR|NW[-_ ]|RGB[- ]?\d+|TL[- ]?\d+|GL[- ]?\d|CB[- ]?\d+|BH[- ]?\d|HS[- ]?\d+|HB[- ]?\d+|MS[- ]?\d+|MC[- ]?\d+|SL[- ]?\d|SNL[- ]?\d|NL[- ]?\d|FS[- ]?\d+|PX[- ]?\d+|PL[- ]?\d+|CL[- ]?\d+|C80|SRP\d|WRP\d|ZRP\d|\b20[2-3]\d{5}\b)",
+    r"(NEEWER|NEEWEAR|NW[-_ ]|RGB[- ]?\d+|TL[- ]?\d+|GL[- ]?\d|CB[- ]?\d+|BH[- ]?\d|HS[- ]?\d+|HB[- ]?\d+|MS[- ]?\d+|MC[- ]?\d+|SL[- ]?\d|SNL[- ]?\d|NL[- ]?\d|FS[- ]?\d+|PX[- ]?\d+|PL[- ]?\d+|CL[- ]?\d+|C80|SRP\d+|WRP\d+|ZRP\d+|VL[- ]?\d+|AL[- ]?\d+|RB[- ]?\d+|RP[- ]?\d+|\bM\d+[BC]\b|\b20[2-3]\d{5}\b)",
     re.I,
 )
 NOT_LIGHT = re.compile(

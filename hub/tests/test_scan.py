@@ -209,6 +209,37 @@ def test_model_code_and_rgb1_match_by_name(hub) -> None:
     assert hub.match_reason(Device("AA:00:00:00:00:03", "NEEWER-RGB960"), Adv("NEEWER-RGB960"), {}) == "name"
 
 
+def test_model_name_matches_extended_series(hub) -> None:
+    """Newly added model prefixes: VL, AL, RB, RP, Mxx[BC], SRP/WRP/ZRP multi-digit."""
+    def _name_reason(name: str) -> str:
+        return hub.match_reason(Device("AA:BB:CC:DD:EE:FF", name), Adv(name), {})
+
+    # Video Light series
+    assert _name_reason("VL49") == "name"
+    assert _name_reason("VL200") == "name"
+
+    # Area Light series
+    assert _name_reason("AL600") == "name"
+
+    # Ring light series (bicolor and panel)
+    assert _name_reason("RB18B") == "name"
+    assert _name_reason("RP16") == "name"
+
+    # M-series bicolor compact panels (suffix required to avoid Apple/Samsung chip names)
+    assert _name_reason("M1B") == "name"
+    assert _name_reason("M30B") == "name"
+
+    # Multi-digit SRP / WRP / ZRP model numbers
+    assert _name_reason("SRP40") == "name"
+    assert _name_reason("WRP100") == "name"
+    assert _name_reason("ZRP100") == "name"
+
+    # Non-lights that happen to share short prefixes must NOT match
+    assert _name_reason("AL Gore") == ""   # name without a number
+    assert _name_reason("MacBook M3") == ""  # apple chip (no B/C suffix after digit)
+
+
+
 def test_empty_services_uses_get_services(hub) -> None:
     class Svc:
         uuid = hub.SERVICE
