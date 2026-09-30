@@ -1,8 +1,11 @@
 {
   "host": "0.0.0.0",
   "port": 8787,
-  "mqtt": "mqtt://homeassistant.local:1883",
+  "apiKey": "",
+  "mqtt": "",
   "mqttUser": "",
   "mqttPassword": "",
-  "discoveryPrefix": "homeassistant"
+  "discoveryPrefix": "homeassistant",
+  "adapter": "auto",
+  "maxConnections": 8
 }

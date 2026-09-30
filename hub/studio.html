@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CineNode</title>
+  <style>
+    :root {
+      --bg: #0c0c0d;
+      --surface: #141416;
+      --raised: #1b1b1e;
+      --fg: #eeeae3;
+      --muted: #9a958c;
+      --subtle: #6e6a64;
+      --accent: #d8d2c8;
+      --ok: #7d9b7a;
+      --danger: #c46b5a;
+      --live: #e8a87c;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+    body { min-height: 100dvh; }
+    header { position: sticky; top: 0; display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid color-mix(in srgb, var(--fg) 10%, transparent); }
+    h1 { font-family: Georgia, "Times New Roman", serif; font-size: 28px; font-weight: 400; margin: 0; letter-spacing: -0.03em; }
+    main { max-width: 920px; margin: 0 auto; padding: 20px; }
+    .muted { color: var(--muted); }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button, input[type="text"] { font: inherit; }
+    button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent); color: var(--bg); cursor: pointer; }
+    button.ghost { background: var(--raised); color: var(--fg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 10%, transparent); }
+    button:disabled { opacity: 0.45; cursor: default; }
+    .status { font-size: 13px; color: var(--muted); }
+    .ok { color: var(--ok); }
+    .warn { color: var(--live); }
+    .grid { display: grid; gap: 14px; margin-top: 18px; }
+    @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+    article { background: var(--surface); border-radius: 12px; padding: 16px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 8%, transparent); }
+    article h2 { margin: 0; font-size: 20px; font-family: Georgia, serif; font-weight: 400; }
+    .meta { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--subtle); }
+    label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 12px; }
+    input[type="range"] { width: 100%; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .modes button { background: var(--raised); color: var(--fg); }
+    .modes button.on { background: var(--accent); color: var(--bg); }
+    .empty { margin-top: 28px; color: var(--muted); max-width: 36rem; }
+    footer { margin-top: 32px; color: var(--subtle); font-size: 13px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.on { background: var(--ok); }
+    .dot.off { background: var(--danger); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CineNode</h1>
+    <span id="status" class="status">Starting</span>
+    <span style="margin-left:auto" class="row">
+      <button class="ghost" id="scan" type="button">Scan</button>
+    </span>
+  </header>
+  <main>
+    <p class="muted">Local hub. Bluetooth on this computer, REST to the lights. Open exactly one printed address. Home Assistant is not required. Agents: POST /mcp or GET /agent.md</p>
+    <div id="lights" class="grid"></div>
+    <section id="nearby-wrap" style="display:none;margin-top:28px">
+      <p class="muted">Nearby BLE that is not in the rig yet. Windows often hides names — tap Hold to GATT-probe one. Close the official Neewer app first.</p>
+      <div id="nearby" class="grid"></div>
+    </section>
+    <p id="empty" class="empty">No fixtures yet. Close the official Neewer app, keep this window open, and tap Scan. Unnamed nearby devices are probed. A PC radio often stops at 3–8 connections.</p>
+    <footer>Looks, patterns, and Spatial live in the full studio. This page is the radio.</footer>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const headers = () => {
+      const key = sessionStorage.getItem("cinenode-key") || "";
+      const h = { "Content-Type": "application/json" };
+      if (key) h["X-CineNode-Key"] = key;
+      return h;
+    };
+    async function api(path, opts) {
+      const res = await fetch(path, opts);
+      if (res.status === 401) {
+        const key = window.prompt("This hub wants an API key");
+        if (key) sessionStorage.setItem("cinenode-key", key);
+        throw new Error("auth");
+      }
+      if (!res.ok) throw new Error(String(res.status));
+      const type = res.headers.get("content-type") || "";
+      return type.includes("json") ? res.json() : res.text();
+    }
+    function card(light) {
+      const disabled = light.connected ? "" : "disabled";
+      const mode = (id) => `<button type="button" data-id="${light.id}" data-patch='${JSON.stringify({ mode: id, power: true })}' class="${light.mode === id ? "on" : ""}">${id.toUpperCase()}</button>`;
+      return `<article>
+        <div class="row">
+          <h2>${escapeHtml(light.name)}</h2>
+          <span class="dot ${light.connected ? "on" : "off"}"></span>
+        </div>
+        <p class="meta">${escapeHtml(light.model || "")} ${escapeHtml(light.mac || "")}</p>
+        <label>Power <span>${light.power ? "on" : "off"}</span></label>
+        <button type="button" class="ghost" data-id="${light.id}" data-patch='${JSON.stringify({ power: !light.power })}' ${disabled}>${light.power ? "Standby" : "Turn on"}</button>
+        <label>Brightness <span>${Math.round(light.brightness || 0)}%</span></label>
+        <input type="range" min="0" max="100" value="${light.brightness || 0}" data-id="${light.id}" data-field="brightness" ${disabled} />
+        <div class="modes">${mode("cct")}${mode("hsi")}${mode("scene")}</div>
+        ${light.mode === "hsi" ? `
+          <label>Hue <span>${Math.round(light.hue || 0)}</span></label>
+          <input type="range" min="0" max="360" value="${light.hue || 0}" data-id="${light.id}" data-field="hue" ${disabled} />
+          <label>Saturation <span>${Math.round(light.saturation || 0)}</span></label>
+          <input type="range" min="0" max="100" value="${light.saturation || 0}" data-id="${light.id}" data-field="sat" ${disabled} />
+        ` : `
+          <label>Kelvin <span>${Math.round(light.kelvin || 5600)}</span></label>
+          <input type="range" min="2700" max="7000" step="50" value="${light.kelvin || 5600}" data-id="${light.id}" data-field="kelvin" ${disabled} />
+        `}
+      </article>`;
+    }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[ch]));
+    }
+    async function patch(id, body) {
+      await api("/api/lights/" + encodeURIComponent(id), { method: "POST", headers: headers(), body: JSON.stringify(body) });
+      await refresh();
+    }
+    async function refresh() {
+      try {
+        const health = await api("/api/health");
+        const connected = health.connected || 0;
+        const total = health.lights || 0;
+        $("status").className = "status " + (connected ? "ok" : "warn");
+        $("status").textContent = connected ? connected + " live" : total ? "Searching" : "No radio yet";
+        const data = await api("/api/lights");
+        const lights = data.lights || [];
+        $("lights").innerHTML = lights.map(card).join("");
+        $("empty").style.display = lights.length ? "none" : "block";
+        const held = new Set(lights.map((item) => String(item.mac || "").toUpperCase()));
+        const nearby = (data.seen || []).filter((item) => {
+          const mac = String(item.mac || "").toUpperCase();
+          return mac && !held.has(mac) && item.reason && item.reason !== "skip";
+        });
+        $("nearby-wrap").style.display = nearby.length ? "block" : "none";
+        $("nearby").innerHTML = nearby.map((item) => {
+          const rssi = item.rssi == null ? "" : ` rssi ${item.rssi}`;
+          const radio = item.adapter ? ` · ${escapeHtml(item.adapter)}` : "";
+          return `<article>
+            <h2>${escapeHtml(item.name || "(no name)")}</h2>
+            <p class="meta">${escapeHtml(item.mac || "")} · ${escapeHtml(item.reason || "seen")}${rssi}${radio}</p>
+            <button type="button" class="ghost" data-hold="${escapeHtml(item.mac || "")}">Hold</button>
+          </article>`;
+        }).join("");
+      } catch (err) {
+        $("status").className = "status warn";
+        $("status").textContent = "Hub not responding";
+      }
+    }
+    document.addEventListener("click", (event) => {
+      const hold = event.target.closest("button[data-hold]");
+      if (hold) {
+        const mac = hold.getAttribute("data-hold");
+        hold.disabled = true;
+        api("/api/reconnect/" + encodeURIComponent(mac), { method: "POST", headers: headers(), body: "{}" })
+          .then(() => refresh())
+          .catch(() => { hold.disabled = false; });
+        return;
+      }
+      const btn = event.target.closest("button[data-id]");
+      if (!btn) return;
+      const body = JSON.parse(btn.getAttribute("data-patch") || "{}");
+      patch(btn.getAttribute("data-id"), body);
+    });
+    document.addEventListener("input", (event) => {
+      const el = event.target;
+      if (!el.matches("input[data-field]")) return;
+      const id = el.getAttribute("data-id");
+      const field = el.getAttribute("data-field");
+      const value = Number(el.value);
+      if (field === "brightness") patch(id, { brightness: value, power: value > 0 });
+      if (field === "kelvin") patch(id, { kelvin: value, mode: "cct" });
+      if (field === "hue") patch(id, { hue: value, mode: "hsi", power: true });
+      if (field === "sat") patch(id, { saturation: value, mode: "hsi", power: true });
+    });
+    $("scan").addEventListener("click", async () => {
+      $("status").textContent = "Scanning";
+      try { await api("/api/scan", { method: "POST", headers: headers(), body: "{}" }); } catch {}
+      await refresh();
+    });
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
