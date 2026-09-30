@@ -39,6 +39,14 @@ SCENES = {
     7: "Lightning",
     8: "Paparazzi",
     9: "TV Screen",
+    10: "Sun Rise",
+    11: "Sun Set",
+    12: "Warm White",
+    13: "Cool White",
+    14: "Old Film",
+    15: "RGB Chase",
+    16: "RGB Pulse",
+    17: "RGB Strobe",
 }
 SCENE_BY_NAME = {name.lower(): sid for sid, name in SCENES.items()}
 
@@ -69,7 +77,7 @@ Operating rules
 4. Windows often hides the local name. Unnamed nearby devices are probed for service 69400001-…. That is expected and can take a minute. Do not abort it.
 5. One PC Bluetooth adapter often holds about 3-8 connections. Cheap dongles stop at 3. If many more exist, connect what you can, say the adapter is full, keep extras in the list as disconnected, and offer connect_light / disconnect_light to swap.
 6. Prefer set_all for a whole-rig look. Prefer set_light to isolate key / fill / hair / tubes.
-7. HSI: hue 0-360, saturation 0-100, brightness 0-100. CCT: kelvin typically 2700-7500. Scenes 1-17 (1 Cop Car, 5 Party, 6 Candlelight).
+7. HSI: hue 0-360, saturation 0-100, brightness 0-100. CCT: kelvin typically 2700-7500. Scenes 1-17: 1 Cop Car, 2 Ambulance, 3 Fire Truck, 4 Fireworks, 5 Party, 6 Candlelight, 7 Lightning, 8 Paparazzi, 9 TV Screen, 10 Sun Rise, 11 Sun Set, 12 Warm White, 13 Cool White, 14 Old Film, 15 RGB Chase, 16 RGB Pulse, 17 RGB Strobe.
 8. After a change the user cares about, list_lights again and report what actually stuck.
 9. If a write fails, say the hub is down or that fixture is offline. Do not pretend the color changed.
 10. Do not blackout the room unless asked. Do not enable MQTT/Home Assistant unless asked.
