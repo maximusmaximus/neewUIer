@@ -85,6 +85,27 @@ def test_effect_and_rgb_helpers(hub) -> None:
     assert s > 99
 
 
+def test_all_17_scenes_are_named(hub) -> None:
+    """SCENES must have exactly 17 entries (1-17) with no gaps."""
+    assert set(hub.SCENES.keys()) == set(range(1, 18)), "SCENES must cover IDs 1-17"
+
+
+def test_scenes_10_to_17_resolvable(hub) -> None:
+    """Scenes added in the 10-17 range must resolve by name via effect_to_scene."""
+    assert hub.effect_to_scene("Sun Rise") == 10
+    assert hub.effect_to_scene("sun rise") == 10  # case-insensitive
+    assert hub.effect_to_scene("Sun Set") == 11
+    assert hub.effect_to_scene("Warm White") == 12
+    assert hub.effect_to_scene("Cool White") == 13
+    assert hub.effect_to_scene("Old Film") == 14
+    assert hub.effect_to_scene("RGB Chase") == 15
+    assert hub.effect_to_scene("RGB Pulse") == 16
+    assert hub.effect_to_scene("RGB Strobe") == 17
+    assert hub.effect_to_scene("scene 17") == 17
+    assert hub.effect_to_scene("scene 18") is None  # still out of range
+
+
+
 def test_ha_state_payload(hub) -> None:
     light = hub.new_light(connected=True, power=True, mode="cct", brightness=72, kelvin=5600)
     payload = hub.ha_state(light)
