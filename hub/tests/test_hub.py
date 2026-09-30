@@ -107,6 +107,7 @@ def test_ha_state_hsi_and_scene_and_offline(hub) -> None:
 
 def test_hub_patch_hsi_and_broadcast(hub, isolated_hub) -> None:
     node = isolated_hub
+    node.lights = [hub.new_light(id="key", name="Key", connected=True)]
     updated = node.patch("key", {"state": "ON", "color": {"h": 210, "s": 70}, "brightness": 80})
     assert updated is not None
     assert updated["mode"] == "hsi"
@@ -141,6 +142,41 @@ def test_stable_id(hub) -> None:
     assert hub.stable_id("", "Fill Light", 2).startswith("fillligh")
 
 
+def test_upsert_lights_merges_by_mac(hub, isolated_hub) -> None:
+    isolated_hub.lights = [hub.new_light(id="n1", name="Old", mac="AA:BB", hue=12, connected=True)]
+    hub.HUB.upsert_lights(
+        [
+            hub.new_light(id="n1", name="Renamed", mac="AA:BB"),
+            hub.new_light(id="n2", name="Fill", mac="CC:DD"),
+        ]
+    )
+    assert [item["id"] for item in isolated_hub.lights] == ["n1", "n2"]
+    assert isolated_hub.lights[0]["name"] == "Renamed"
+    assert isolated_hub.lights[0]["hue"] == 12
+    missing = isolated_hub.request_reconnect("nope")
+    assert missing is None
+    found = isolated_hub.request_reconnect("n1")
+    assert found is not None
+    assert "AA:BB" in isolated_hub.reconnect_macs
+    isolated_hub.request_scan()
+    assert isolated_hub.scan_requested is True
+
+
+def test_authorize_optional_api_key(hub, isolated_hub) -> None:
+    isolated_hub.api_key = ""
+    assert isolated_hub.authorize("") is True
+    isolated_hub.api_key = "secret"
+    assert isolated_hub.authorize("secret") is True
+    assert isolated_hub.authorize("nope") is False
+
+
+def test_studio_html_is_packaged(hub) -> None:
+    html = hub.studio_html()
+    assert html is not None
+    assert b"CineNode" in html
+    assert b"Home Assistant is not required" in html
+
+
 def test_looks_like_neewer(hub) -> None:
     class Device:
         def __init__(self, name: str | None) -> None:
@@ -154,5 +190,68 @@ def test_looks_like_neewer(hub) -> None:
     assert hub.looks_like_neewer(Device("NEEWER RGB660"), Adv()) is True
     assert hub.looks_like_neewer(Device("NW-RGB176"), Adv()) is True
     assert hub.looks_like_neewer(Device("SL90"), Adv()) is True
+    assert hub.looks_like_neewer(Device("RGB660 PRO"), Adv()) is True
+    assert hub.looks_like_neewer(Device("TL60"), Adv()) is True
+    assert hub.looks_like_neewer(Device("GL1 Pro"), Adv()) is True
+    assert hub.looks_like_neewer(Device("BH-30S"), Adv()) is True
     assert hub.looks_like_neewer(Device(None), Adv(uuids=[hub.SERVICE])) is True
     assert hub.looks_like_neewer(Device("Philips Hue"), Adv()) is False
+    assert hub.looks_like_neewer(Device("AirPods"), Adv()) is False
+
+
+def test_match_reason_and_probe_candidates(hub) -> None:
+    class Device:
+        def __init__(self, name: str | None, address: str = "") -> None:
+            self.name = name
+            self.address = address
+
+    class Adv:
+        def __init__(self, local_name: str = "", uuids: list[str] | None = None, rssi: int | None = -50) -> None:
+            self.local_name = local_name
+            self.service_uuids = uuids or []
+            self.rssi = rssi
+
+    assert hub.match_reason(Device("NEEWER RGB660"), Adv()) == "name"
+    assert hub.match_reason(Device(None), Adv(uuids=[hub.SERVICE])) == "service"
+    known = {"C5:02:F5:0D:CA:BA": {"name": "Key"}}
+    assert hub.match_reason(Device(None, "c5:02:f5:0d:ca:ba"), Adv(), known) == "known"
+    assert hub.is_probe_candidate(Device(None, "AA:BB:CC:DD:EE:FF"), Adv(rssi=-40), {}) is True
+    assert hub.is_probe_candidate(Device("AirPods"), Adv(rssi=-30), {}) is False
+    assert hub.is_probe_candidate(Device("Philips Hue"), Adv(rssi=-30), {}) is False
+    assert hub.is_probe_candidate(Device(None), Adv(rssi=-99), {}) is True
+    assert hub.is_probe_candidate(Device("NEEWER RGB660"), Adv(), {}) is False
+
+
+def test_normalize_and_known_macs(hub, tmp_path) -> None:
+    assert hub.normalize_mac("c5-02-f5-0d-ca-ba") == "C5:02:F5:0D:CA:BA"
+    store = hub.remember_mac({}, "c5:02:f5:0d:ca:ba", "Key")
+    path = tmp_path / "known.json"
+    hub.save_known(store, str(path))
+    loaded = hub.load_known(str(path))
+    assert loaded["C5:02:F5:0D:CA:BA"]["name"] == "Key"
+
+
+def test_find_light_and_disconnect(hub, isolated_hub) -> None:
+    isolated_hub.lights = [hub.new_light(id="nca0ba", name="Key", mac="C5:02:F5:0D:CA:BA", connected=True)]
+    assert isolated_hub.find_light("nca0ba")["mac"] == "C5:02:F5:0D:CA:BA"
+    assert isolated_hub.find_light("c5:02:f5:0d:ca:ba")["id"] == "nca0ba"
+    dropped = isolated_hub.request_disconnect("nca0ba")
+    assert dropped is not None
+    assert "C5:02:F5:0D:CA:BA" in isolated_hub.disconnect_macs
+    queued = isolated_hub.request_reconnect("C5:02:F5:0D:CA:BA")
+    assert queued is not None
+    assert "C5:02:F5:0D:CA:BA" in isolated_hub.reconnect_macs
+    assert "C5:02:F5:0D:CA:BA" not in isolated_hub.disconnect_macs
+
+
+def test_ready_banner_says_open_one(hub) -> None:
+    both = hub.ready_banner(8787, "10.1.10.202", "0.0.0.0")
+    assert "Open exactly ONE URL" in both
+    assert "IF the browser is on THIS computer" in both
+    assert "http://127.0.0.1:8787" in both
+    assert "http://10.1.10.202:8787" in both
+    assert "Do not open both" in both
+    assert "You do not need both" in both
+    local_only = hub.ready_banner(8787, "127.0.0.1", "127.0.0.1")
+    assert "http://10.1.10.202" not in local_only
+    assert "this computer" in local_only.lower()

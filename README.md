@@ -54,6 +54,34 @@ python3 hub/cinenode-hub.py --mqtt mqtt://homeassistant.local:1883
 
 Close the Neewer app first. WSL cannot see the Windows Bluetooth adapter — run the Windows pack on the host.
 
+The hub prints **two addresses for the same studio**. Open **exactly one**.
+
+| Where the browser is | Open |
+| --- | --- |
+| **This computer** | `http://127.0.0.1:<port>` |
+| **A phone or another computer** on the same Wi-Fi | the LAN address it printed |
+
+## Two Bluetooth radios
+
+A PC often has Intel built-in Bluetooth plus a USB dongle (for example TP-Link, VID 2357). Windows Bleak can listen on only the **default** radio, so lights on the other radio never appear. Linux scans every `hci*` adapter in parallel.
+
+```bash
+python3 hub/cinenode-hub.py --list-adapters
+python3 hub/cinenode-hub.py --adapter all
+```
+
+`--adapter` also accepts `hci1`, `TP-Link`, or `"adapter": "all"` in `cinenode.json`. On Windows, `--adapter all` walks each radio in turn while nothing is held, then prefers the USB dongle. If Windows will not change the default: Device Manager → disable Intel Wireless Bluetooth, leave the USB dongle on, scan again.
+
+Weak advertisements are kept. There is no RSSI cutoff.
+
+## Agents (MCP)
+
+```bash
+python3 hub/cinenode-hub.py --mcp
+```
+
+Tools: `list_lights`, `list_seen`, `list_adapters`, `scan_lights`, `connect_light`, `disconnect_light`, `set_light`, `set_all`, `hub_health`. Prompt: `GET /agent.md`.
+
 ## Home Assistant
 
 The hub **subscribes** to `cinenode/<light-id>/set` (HA JSON light schema: HS color, color temperature, brightness, effects) and publishes state plus MQTT discovery.

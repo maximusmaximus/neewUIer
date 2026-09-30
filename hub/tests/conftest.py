@@ -48,6 +48,21 @@ def isolated_hub(hub):
     orig_pending = dict(hub.HUB.pending)
     orig_mqtt = hub.HUB.mqtt_status
     orig_on_change = hub.HUB.on_change
+    orig_key = hub.HUB.api_key
+    orig_scan = hub.HUB.scan_requested
+    orig_reconnect = set(hub.HUB.reconnect_macs)
+    orig_scan_seconds = hub.HUB.scan_seconds
+    orig_seen = list(hub.HUB.last_seen)
+    orig_known = dict(hub.HUB.known_macs)
+    orig_probe = hub.HUB.probe
+    orig_disconnect = set(hub.HUB.disconnect_macs)
+    orig_scanning = hub.HUB.scanning
+    orig_max = hub.HUB.max_connections
+    orig_scan_adapters = list(hub.HUB.scan_adapters)
+    orig_prefer = hub.HUB.adapter_prefer
+    orig_info = list(hub.HUB.adapters_info)
+    orig_dev_adp = dict(hub.HUB.device_adapters)
+    orig_scan_mode = hub.HUB.scan_mode
     try:
         yield hub.HUB
     finally:
@@ -58,3 +73,19 @@ def isolated_hub(hub):
         hub.HUB.mqtt_status = orig_mqtt
         hub.HUB.on_change = orig_on_change
         hub.HUB.clients = {}
+        hub.HUB.api_key = orig_key
+        hub.HUB.scan_requested = orig_scan
+        hub.HUB.reconnect_macs = orig_reconnect
+        hub.HUB.scan_seconds = orig_scan_seconds
+        hub.HUB.last_seen = orig_seen
+        hub.HUB.known_macs = orig_known
+        hub.HUB.probe = orig_probe
+        hub.HUB.disconnect_macs = orig_disconnect
+        hub.HUB.scanning = orig_scanning
+        hub.HUB.max_connections = orig_max
+        hub.HUB.devices = {}
+        hub.HUB.scan_adapters = orig_scan_adapters
+        hub.HUB.adapter_prefer = orig_prefer
+        hub.HUB.adapters_info = orig_info
+        hub.HUB.device_adapters = orig_dev_adp
+        hub.HUB.scan_mode = orig_scan_mode
