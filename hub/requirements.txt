@@ -1,2 +1,2 @@
 bleak>=0.22
-paho-mqtt>=1.6
+paho-mqtt>=2.1.0
